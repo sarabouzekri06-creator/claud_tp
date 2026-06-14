@@ -1,0 +1,61 @@
+
+
+services:
+
+  # MongoDB 
+  mongodb:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  #  livre
+  livre-service:
+    build: ./microservice_livres
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+
+  # membre
+  membre-service:
+    build: ./microservice_membres
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+
+  #  emprunt
+  emprunt-service:
+    build: ./microservice_emprunts
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mongodb
+      - livre-service
+      - membre-service
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - livre-service
+      - membre-service
+      - emprunt-service
+    environment:
+      - LIVRE_SERVICE_URL=http://livre-service:3001
+      - MEMBRE_SERVICE_URL=http://membre-service:3002
+      - EMPRUNT_SERVICE_URL=http://emprunt-service:3003
+    
+
+volumes:
+  mongo-data:
